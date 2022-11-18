@@ -64,7 +64,7 @@ def main():
     print("Number of messages: " + str(num_msgs) + "\n")
     print("MESSAGES PER SENDER:\n")
     for item in sorted_msgs_by_sender:
-        print(item[0] + ": " + str(item[1]))
+        print(item[0] + " " + str(item[1]))
 
 
 if __name__ == '__main__':
