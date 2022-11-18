@@ -14,6 +14,7 @@ def main():
     # once we've found the start date, then we begin counting statistics
     found_start = False
     unique_senders = set()
+    msgs_per_sender = {}
     num_msgs = 0
 
     chat_file = open(Path(args.chat))
@@ -37,19 +38,34 @@ def main():
         # to get the sender, remove the date from the beginning of the line
         # then, match any character up to the colon
         parseline = re.sub("^([\d]*)[\/]([\d]*)[\/]([\d]*), [\d]*:[\d]* (AM|PM) - ", "", line)
-        sender = re.search("^([^:])+:", parseline)
+        sender_s = re.search("^([^:])+:", parseline)
 
         # messages such as people joining the chat don't have senders
         # we don't want to count them either, so increment num_msgs later
-        if not sender:
+        if not sender_s:
             continue
-
-        unique_senders.add(sender.group(0))
+        
+        sender = sender_s.group(0)
+        unique_senders.add(sender)
+        
+        # track messages per sender
+        if sender not in msgs_per_sender.keys():
+            msgs_per_sender[sender] = 1
+        else:
+            msgs_per_sender[sender] += 1
+    
         num_msgs += 1
+    
+    # sort messages per sender
+    sorted_msgs_by_sender = sorted(msgs_per_sender.items(), key=lambda x:x[1], reverse=True)
 
-    print("RESULTS:")
+    print("RESULTS:\n")
     print("Unique senders: " + str(len(unique_senders)))
-    print("Number of messages: " + str(num_msgs))
+    print("Number of messages: " + str(num_msgs) + "\n")
+    print("MESSAGES PER SENDER:\n")
+    for item in sorted_msgs_by_sender:
+        print(item[0] + ": " + str(item[1]))
+
 
 if __name__ == '__main__':
     main()
