@@ -15,7 +15,7 @@ Then, run the following command:
 The argument values are as follows:
 
 - `<chat>` is the exported WhatsApp chat file as a `.txt`
-- `<date>` is the target start date, after which statistics will be collected. Note that at this time, the date must be formatted as `mm/dd/yy` (omitting any leading zeroes). If the statistics are returned all zeroes, ensure the date is formatted exactly as it appears in the chat file
+- `<date>` is the target start date, after which statistics will be collected. It should be passed in quotation marks. Note that at this time, the date must be formatted as `mm/dd/yy` (omitting any leading zeroes). The date must also exist at least once in the WhatsApp export file. If the statistics are returned all zeroes, ensure the date is formatted exactly as it appears in the chat file
 
 ### Generating A Graph
 

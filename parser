@@ -29,14 +29,17 @@ def main():
     chat_file = open(Path(args.chat))
     for line in chat_file:
         # lines that begin a new message should begin with a timestamp in this format
-        # full regular expression: ^([\d]*)[\/]([\d]*)[\/]([\d]*), [\d]*:[\d]* (AM|PM)
         # we only need the date portion to match the target date
-        timestamp = re.search("^([\d]*)[\/]([\d]*)[\/]([\d]*)", line)
+        timestamp = re.search("^[\[]*([\d]*)[\/]([\d]*)[\/]([\d]*)", line)
         if not timestamp:
             continue
     
         # check if the line has our target date if we haven't found it yet
-        if timestamp.group(0) == args.start_date:
+        timestamp_str = timestamp.group(0)
+
+        # remove the opening bracket if it was caught by the regex
+        timestamp_str = timestamp_str[1:] if timestamp_str[0] == "[" else timestamp_str
+        if timestamp_str == args.start_date:
             found_start = True;
         
         if not found_start:
@@ -46,7 +49,7 @@ def main():
 
         # to get the sender, remove the date from the beginning of the line
         # then, match any character up to the colon
-        parseline = re.sub("^([\d]*)[\/]([\d]*)[\/]([\d]*), [\d]*:[\d]* (AM|PM) - ", "", line)
+        parseline = re.sub("^[\[]*([\d]*)[\/]([\d]*)[\/]([\d]*), [\d]*:[\d]*(:[\d]*){0,1} (AM|PM)[\]]*( [-])* ", "", line)
         sender_s = re.search("^([^:])+:", parseline)
 
         # messages such as people joining the chat don't have senders
