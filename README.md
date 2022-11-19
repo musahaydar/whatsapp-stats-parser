@@ -30,6 +30,7 @@ Optional arguments for the graphing script:
 - `--graph_bars <int>`: specify how many bars to graph (e.g. how many senders to display). The default value is 10
 - `--graph_title <string>`: add a title to the graph. By default, no title will be added to the graph
 - `--graph_file <string>`: specify the file to output the graph to. If no file name is specified, the output will be `graph.jpg`
+- `--graph_color <string>`: specify the color for the bars in the graph. This string should be a valid [matplotlib color](https://matplotlib.org/stable/gallery/color/named_colors.html).
 
 ### Adding Contacts JSON
 
