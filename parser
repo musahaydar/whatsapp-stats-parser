@@ -10,10 +10,12 @@ def main():
     parser.add_argument('--chat', required=True, type=str, help='File path to exported WhatsApp chat as .txt file.')
     # TODO: make the timestamp format less strict
     parser.add_argument("--start_date", required=True, type=str, help="Start date to being parsing stats (format: m/dd/yy).")
-    parser.add_argument("--graph_bars", type=int)
-    parser.add_argument("--graph_title", type=str)
-    # TODO: add help args
-    parser.add_argument("--contacts", type=str) 
+    # enable generating a graph
+    parser.add_argument("-g", "--graph", action="store_true", help="Enabled outputting a graph.")
+    parser.add_argument("--graph_bars", type=int, default=10)
+    parser.add_argument("--graph_title", type=str, default="")
+    parser.add_argument("--contacts", type=str)
+    parser.add_argument("--graph_file", type=str, default="graph.jpg", help="File to output the graph to.")
     args = parser.parse_args()
 
     # iterate through lines of the file until we find the target start date
@@ -78,12 +80,13 @@ def main():
     # sorted_msgs_by_sender is a list of pairs
     # each pair is the ("name of the contact or the phone number", number of msgs sent)
 
-    graph_msgs_per_person(sorted_msgs_by_sender, args.graph_bars, args.graph_title)
+    if args.graph:
+        graph_msgs_per_person(sorted_msgs_by_sender, args.graph_bars, args.graph_title, args.graph_file)
 
     for item in sorted_msgs_by_sender:
         print(item[0] + ": " + str(item[1]))
 
-def graph_msgs_per_person(msgs_per_sender, num_bars, title):
+def graph_msgs_per_person(msgs_per_sender, num_bars, title, output):
     # unpack the list of pairs into two tuples
     senders, num_msgs = zip(*msgs_per_sender[0:(num_bars-1)])
     
@@ -98,8 +101,7 @@ def graph_msgs_per_person(msgs_per_sender, num_bars, title):
     fig = plt.gcf()
     fig.tight_layout()
 
-    # TODO: make output file an argument
-    plt.savefig("output.jpg", dpi=300)
+    plt.savefig(output, dpi=300)
     plt.close()
 
 if __name__ == '__main__':
