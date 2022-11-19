@@ -15,7 +15,7 @@ def main():
     parser.add_argument("--graph_bars", type=int, default=10)
     parser.add_argument("--graph_color", type=str, default="tab:blue")
     parser.add_argument("--graph_title", type=str, default="")
-    parser.add_argument("--contacts", type=str)
+    parser.add_argument("--contacts", type=str, default="")
     parser.add_argument("--graph_file", type=str, default="graph.jpg", help="File to output the graph to.")
     args = parser.parse_args()
 
@@ -25,7 +25,9 @@ def main():
     unique_senders = set()
     msgs_per_sender = {}
     num_msgs = 0
-    contacts = json.load(open(args.contacts))
+
+    if args.contacts:
+        contacts = json.load(open(args.contacts))
 
     chat_file = open(Path(args.chat))
     for line in chat_file:
@@ -60,7 +62,7 @@ def main():
         
         sender = sender_s.group(0)[:-1]
 
-        if sender in contacts.keys():
+        if args.contacts and sender in contacts.keys():
             sender = contacts[sender]
 
         unique_senders.add(sender)
