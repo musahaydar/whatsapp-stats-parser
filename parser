@@ -2,12 +2,15 @@
 from argparse import ArgumentParser
 from pathlib import Path
 import re
+import matplotlib.pyplot as plt
 
 def main():
     parser = ArgumentParser()
     parser.add_argument('--chat', required=True, type=str, help='File path to exported WhatsApp chat as .txt file.')
     # TODO: make the timestamp format less strict
     parser.add_argument("--start_date", required=True, type=str, help="Start date to being parsing stats (format: m/dd/yy).")
+    parser.add_argument("--graph_bars", type=int)
+    parser.add_argument("--graph_title", type=str)
     args = parser.parse_args()
 
     # iterate through lines of the file until we find the target start date
@@ -63,9 +66,32 @@ def main():
     print("Unique senders: " + str(len(unique_senders)))
     print("Number of messages: " + str(num_msgs) + "\n")
     print("MESSAGES PER SENDER:\n")
+
+    # sorted_msgs_by_sender is a list of pairs
+    # each pair is the ("name of the contact or the phone number", number of msgs sent)
+
+    graph_msgs_per_person(sorted_msgs_by_sender, args.graph_bars, args.graph_title)
+
     for item in sorted_msgs_by_sender:
         print(item[0] + " " + str(item[1]))
 
+def graph_msgs_per_person(msgs_per_sender, num_bars, title):
+    # unpack the list of pairs into two tuples
+    senders, num_msgs = zip(*msgs_per_sender[0:(num_bars-1)])
+    
+    # graph the sender names with the height of the bar being the number of msgs they have sent 
+    plt.figure(figsize = (8, 5), facecolor='lightgray')
+    plt.bar(senders, num_msgs, align="center")
+    plt.title(title, fontsize="larger")
+
+    # make the x labels rotated 45 degrees
+    plt.xticks(rotation=45, ha='right')
+    
+    fig = plt.gcf()
+    fig.tight_layout()
+
+    plt.savefig("output.jpg", dpi=300)
+    plt.close()
 
 if __name__ == '__main__':
     main()
