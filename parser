@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 import re
 import matplotlib.pyplot as plt
+import json
 
 def main():
     parser = ArgumentParser()
@@ -11,6 +12,8 @@ def main():
     parser.add_argument("--start_date", required=True, type=str, help="Start date to being parsing stats (format: m/dd/yy).")
     parser.add_argument("--graph_bars", type=int)
     parser.add_argument("--graph_title", type=str)
+    # TODO: add help args
+    parser.add_argument("--contacts", type=str) 
     args = parser.parse_args()
 
     # iterate through lines of the file until we find the target start date
@@ -19,6 +22,7 @@ def main():
     unique_senders = set()
     msgs_per_sender = {}
     num_msgs = 0
+    contacts = json.load(open(args.contacts))
 
     chat_file = open(Path(args.chat))
     for line in chat_file:
@@ -48,7 +52,11 @@ def main():
         if not sender_s:
             continue
         
-        sender = sender_s.group(0)
+        sender = sender_s.group(0)[:-1]
+
+        if sender in contacts.keys():
+            sender = contacts[sender]
+
         unique_senders.add(sender)
         
         # track messages per sender
@@ -73,7 +81,7 @@ def main():
     graph_msgs_per_person(sorted_msgs_by_sender, args.graph_bars, args.graph_title)
 
     for item in sorted_msgs_by_sender:
-        print(item[0] + " " + str(item[1]))
+        print(item[0] + ": " + str(item[1]))
 
 def graph_msgs_per_person(msgs_per_sender, num_bars, title):
     # unpack the list of pairs into two tuples
@@ -90,6 +98,7 @@ def graph_msgs_per_person(msgs_per_sender, num_bars, title):
     fig = plt.gcf()
     fig.tight_layout()
 
+    # TODO: make output file an argument
     plt.savefig("output.jpg", dpi=300)
     plt.close()
 
