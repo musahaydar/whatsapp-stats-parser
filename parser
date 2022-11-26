@@ -22,7 +22,7 @@ def main():
     parser.add_argument("--words_sender_count", type=int, default=10, help="The number of top senders you want the most common words for")
     parser.add_argument("--words_count", type=int, default=10, help="The number of most common words you want")
     args = parser.parse_args()
-
+    # TODO add new arguments to README
     # iterate through lines of the file until we find the target start date
     # once we've found the start date, then we begin counting statistics
     found_start = False
@@ -130,7 +130,7 @@ def graph_msgs_per_person(msgs_per_sender, num_bars, title, color, output):
 def top_words(words_by_sender, rankings, word_count, sender_count):
     # TODO make a system that takes all the words sent in the time defined and finds the top words by sender?
     # TODO find a way to eliminate words from the system that are insignificant
-    
+
     # get the top ranked people that we will go through the data for 
     top_ranked = []
     if sender_count == 1:
