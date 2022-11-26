@@ -3,3 +3,5 @@
 *.jpg
 *.jpeg
 contacts.json
+*.csv
+stripper.py
