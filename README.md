@@ -32,6 +32,19 @@ Optional arguments for the graphing script:
 - `--graph_file <string>`: specify the file to output the graph to. If no file name is specified, the output will be `graph.jpg`
 - `--graph_color <string>`: specify the color for the bars in the graph. This string should be a valid [matplotlib color](https://matplotlib.org/stable/gallery/color/named_colors.html).
 
+### Generating Top Ranked Word Clouds
+
+The script can also generate a word cloud which tells you the most common words for some of the top ranked senders. To generate wordclouds, add the `-w` flag:
+
+```
+./parser --chat <chat_file> --start_date <date> -w
+```
+
+Optional arguments for the graphing script:
+
+- `--words_count <int>`: specify how many of the top senders to create wordclouds for. The default value is 5
+
+
 ### Adding Contacts JSON
 
 Optionally, you can add a JSON file which specifies replacement names for contacts in the output and the graph. The contact being replaced (e.g. a phone number included the WhatsApp export) should be formatted exactly as it appears in the export file. An example of the JSON is as follows:
