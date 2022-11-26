@@ -34,13 +34,13 @@ Optional arguments for the graphing script:
 
 ### Generating Top Ranked Word Clouds
 
-The script can also generate a word cloud which tells you the most common words for some of the top ranked senders. To generate wordclouds, add the `-w` flag:
+The script can also generate a word cloud which tells you the most common words for some of the top ranked senders. Common words specified in the `common_words.json` file will be excluded from the word cloud. To generate word clouds, add the `-w` flag:
 
 ```
 ./parser --chat <chat_file> --start_date <date> -w
 ```
 
-Optional arguments for the graphing script:
+Optional arguments for generating word clouds:
 
 - `--words_count <int>`: specify how many of the top senders to create wordclouds for. The default value is 5
 
