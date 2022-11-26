@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 import matplotlib.pyplot as plt
 import json
+from wordcloud import WordCloud
 
 def main():
     parser = ArgumentParser()
@@ -17,14 +18,18 @@ def main():
     parser.add_argument("--graph_title", type=str, default="")
     parser.add_argument("--contacts", type=str, default="")
     parser.add_argument("--graph_file", type=str, default="graph.jpg", help="File to output the graph to.")
+    # enable most common words per sender
+    parser.add_argument("-w", "--words", action="store_true", help="Enable most common words by sender functionality")
+    parser.add_argument("--words_count", type=int, default=5, help="The number of top senders you want the most common words for")
     args = parser.parse_args()
-
     # iterate through lines of the file until we find the target start date
     # once we've found the start date, then we begin counting statistics
     found_start = False
     unique_senders = set()
     msgs_per_sender = {}
     num_msgs = 0
+    
+    common_words = {}
 
     if args.contacts:
         contacts = json.load(open(args.contacts))
@@ -54,6 +59,12 @@ def main():
         # then, match any character up to the colon
         parseline = re.sub("^[\[]*([\d]*)[\/]([\d]*)[\/]([\d]*), [\d]*:[\d]*(:[\d]*){0,1} (AM|PM)[\]]*( [-])* ", "", line)
         sender_s = re.search("^([^:])+:", parseline)
+        contents = re.sub("^([^:])+:", "", parseline)
+        
+        if contents == " <Media omitted>\n":
+            contents = ''
+        elif contents == " You deleted this message\n":
+            contents = ''
 
         # messages such as people joining the chat don't have senders
         # we don't want to count them either, so increment num_msgs later
@@ -62,6 +73,11 @@ def main():
         
         sender = sender_s.group(0)[:-1]
 
+        if sender not in common_words.keys():
+            common_words[sender] = (contents.strip() + " ")
+        else:
+            common_words[sender] += (contents.strip() + " ")
+        
         if args.contacts and sender in contacts.keys():
             sender = contacts[sender]
 
@@ -78,16 +94,21 @@ def main():
     # sort messages per sender
     sorted_msgs_by_sender = sorted(msgs_per_sender.items(), key=lambda x:x[1], reverse=True)
 
-    print("RESULTS:\n")
-    print("Unique senders: " + str(len(unique_senders)))
-    print("Number of messages: " + str(num_msgs) + "\n")
-    print("MESSAGES PER SENDER:\n")
+    
 
     # sorted_msgs_by_sender is a list of pairs
     # each pair is the ("name of the contact or the phone number", number of msgs sent)
 
     if args.graph:
         graph_msgs_per_person(sorted_msgs_by_sender, args.graph_bars, args.graph_title, args.graph_color, args.graph_file)
+    
+    if args.words:
+        top_words(common_words, sorted_msgs_by_sender, args.words_count, args.start_date)
+    
+    print("RESULTS:\n")
+    print("Unique senders: " + str(len(unique_senders)))
+    print("Number of messages: " + str(num_msgs) + "\n")
+    print("MESSAGES PER SENDER:\n")
 
     for item in sorted_msgs_by_sender:
         print(item[0] + ": " + str(item[1]))
@@ -109,6 +130,43 @@ def graph_msgs_per_person(msgs_per_sender, num_bars, title, color, output):
 
     plt.savefig(output, dpi=300)
     plt.close()
+
+def top_words(words_by_sender, rankings, sender_count, start_date):
+    # TODO find a way to eliminate words from the system that are insignificant
+
+    # get the top ranked people that we will go through the data for 
+    top_ranked = []
+    if sender_count == 1:
+        top_ranked = [list(rankings[0])[0]]
+    else:
+        for x, y in rankings[0:(sender_count)]:
+            top_ranked.append(x)
+    
+    common_words = ["don", "t", "u", "ok", "message", "deleted", 'i',"it's", 'the','at','there','some','my','of','be','use','her','than','and','this','an','would','a','have','each','make','to','from','which','like','been','in','or','she','him','call','is','one','do','into','who','you','had','how','that','by','their','has','its','it','if','look','now','he','but','will','was','not','up','more','long','for','what','on','go','are','were','out','see','did','as','we','many','get','with','when','then','no','come','his','your','them','way','made','they','can','these','may','I','so',]
+
+    # find word frequency per sender
+    for x in top_ranked:
+        # get list of every word the ranked sender has sent
+        ranked_sender_all_words = (words_by_sender.get(x)).lower().split()
+        ranked_sender_all_words_cleaned = [i for i in ranked_sender_all_words if i not in common_words]
+        ranked_sender_all_words_cleaned_str = " ".join(ranked_sender_all_words_cleaned)
+
+        # find the frequency of each word
+        sender_words = {}
+        for word in ranked_sender_all_words_cleaned:
+            if word not in sender_words.keys():
+                sender_words[word] = 1
+            else:
+                sender_words[word] += 1
+
+        wordcloud = WordCloud(width=800, height=660).generate(ranked_sender_all_words_cleaned_str)
+        
+        plt.figure(figsize=(10,8))
+        plt.axis("off")
+        plt.title(x + " Most Common Words since " + start_date, fontsize=13)
+        plt.imshow(wordcloud)
+        plt.savefig("".join(x.split()) + "_Most Common_Words_Since_"+"-".join(start_date.split("/"))+".png", bbox_inches='tight')
+        plt.close()
 
 if __name__ == '__main__':
     main()
