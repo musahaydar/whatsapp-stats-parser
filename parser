@@ -5,6 +5,7 @@ from wordcloud import WordCloud
 import re
 import matplotlib.pyplot as plt
 import json
+import os
 
 def graph_msgs_per_person(msgs_per_sender, num_bars, title, color, output):
     # unpack the list of pairs into two tuples
@@ -24,7 +25,7 @@ def graph_msgs_per_person(msgs_per_sender, num_bars, title, color, output):
     plt.savefig(output, dpi=300)
     plt.close()
 
-def top_words(words_by_sender, rankings, sender_count, start_date):
+def top_words(words_by_sender, rankings, sender_count, start_date, chat_name):
     # TODO find a way to eliminate words from the system that are insignificant
 
     # get the top ranked people that we will go through the data for 
@@ -41,6 +42,12 @@ def top_words(words_by_sender, rankings, sender_count, start_date):
     except:
         print("NOTE: no common_words.json file was found")
     
+    try:
+        os.makedirs(chat_name.split(".")[0] + "/")
+    except FileExistsError:
+        # directory already exists
+        pass
+
     # find word frequency per sender
     for x in top_ranked:
         # get list of every word the ranked sender has sent
@@ -62,7 +69,8 @@ def top_words(words_by_sender, rankings, sender_count, start_date):
         plt.axis("off")
         plt.title(x + " Most Common Words since " + start_date, fontsize=13)
         plt.imshow(wordcloud)
-        plt.savefig("".join(x.split()) + "_Most Common_Words_Since_"+"-".join(start_date.split("/"))+".png", bbox_inches='tight')
+        plt.savefig(chat_name.split(".")[0] + "/" + "".join(x.split()) + "_Most Common_Words_Since_"+"-".join(start_date.split("/"))+".png", bbox_inches='tight')
+        # plt.savefig("".join(x.split()) + "_Most Common_Words_Since_"+"-".join(start_date.split("/"))+".png", bbox_inches='tight')
         plt.close()
 
 def main():
@@ -182,7 +190,7 @@ def main():
         graph_msgs_per_person(sorted_msgs_by_sender, args.graph_bars, args.graph_title, args.graph_color, args.graph_file)
     
     if args.words:
-        top_words(common_words_per_sender, sorted_msgs_by_sender, args.words_count, args.start_date)
+        top_words(common_words_per_sender, sorted_msgs_by_sender, args.words_count, args.start_date, args.chat)
     
     print("RESULTS:\n")
     print("Unique senders: " + str(len(msgs_per_sender.keys())))
