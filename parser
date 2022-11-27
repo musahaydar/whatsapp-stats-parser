@@ -6,111 +6,6 @@ import re
 import matplotlib.pyplot as plt
 import json
 
-def main():
-    parser = ArgumentParser()
-    parser.add_argument('--chat', required=True, type=str, help='File path to exported WhatsApp chat as .txt file.')
-    # TODO: make the timestamp format less strict
-    parser.add_argument("--start_date", required=True, type=str, help="Start date to being parsing stats (format: m/dd/yy).")
-    # enable generating a graph
-    parser.add_argument("-g", "--graph", action="store_true", help="Enabled outputting a graph.")
-    parser.add_argument("--graph_bars", type=int, default=10)
-    parser.add_argument("--graph_color", type=str, default="tab:blue")
-    parser.add_argument("--graph_title", type=str, default="")
-    parser.add_argument("--contacts", type=str, default="")
-    parser.add_argument("--graph_file", type=str, default="graph.jpg", help="File to output the graph to.")
-    # enable most common words per sender
-    parser.add_argument("-w", "--words", action="store_true", help="Enable most common words by sender functionality")
-    parser.add_argument("--words_count", type=int, default=5, help="The number of top senders you want the most common words for")
-    args = parser.parse_args()
-    # iterate through lines of the file until we find the target start date
-    # once we've found the start date, then we begin counting statistics
-    found_start = False
-    unique_senders = set()
-    msgs_per_sender = {}
-    num_msgs = 0
-    
-    common_words = {}
-
-    if args.contacts:
-        contacts = json.load(open(args.contacts))
-
-    chat_file = open(Path(args.chat))
-    for line in chat_file:
-        # lines that begin a new message should begin with a timestamp in this format
-        # we only need the date portion to match the target date
-        timestamp = re.search("^[\[]*([\d]*)[\/]([\d]*)[\/]([\d]*)", line)
-        if not timestamp:
-            continue
-    
-        # check if the line has our target date if we haven't found it yet
-        timestamp_str = timestamp.group(0)
-
-        # remove the opening bracket if it was caught by the regex
-        timestamp_str = timestamp_str[1:] if timestamp_str[0] == "[" else timestamp_str
-        if timestamp_str == args.start_date:
-            found_start = True;
-        
-        if not found_start:
-            continue
-        
-        # at this point, we'll begin parsing the messages for stats
-
-        # to get the sender, remove the date from the beginning of the line
-        # then, match any character up to the colon
-        parseline = re.sub("^[\[]*([\d]*)[\/]([\d]*)[\/]([\d]*), [\d]*:[\d]*(:[\d]*){0,1} (AM|PM)[\]]*( [-])* ", "", line)
-        sender_s = re.search("^([^:])+:", parseline)
-        contents = re.sub("^([^:])+:", "", parseline)
-        
-        if contents == " <Media omitted>\n":
-            contents = ''
-        elif contents == " You deleted this message\n":
-            contents = ''
-
-        # messages such as people joining the chat don't have senders
-        # we don't want to count them either, so increment num_msgs later
-        if not sender_s:
-            continue
-        
-        sender = sender_s.group(0)[:-1]
-
-        if sender not in common_words.keys():
-            common_words[sender] = (contents.strip() + " ")
-        else:
-            common_words[sender] += (contents.strip() + " ")
-        
-        if args.contacts and sender in contacts.keys():
-            sender = contacts[sender]
-
-        unique_senders.add(sender)
-        
-        # track messages per sender
-        if sender not in msgs_per_sender.keys():
-            msgs_per_sender[sender] = 1
-        else:
-            msgs_per_sender[sender] += 1
-    
-        num_msgs += 1
-    
-    # sort messages per sender
-    sorted_msgs_by_sender = sorted(msgs_per_sender.items(), key=lambda x:x[1], reverse=True)
-
-    # sorted_msgs_by_sender is a list of pairs
-    # each pair is the ("name of the contact or the phone number", number of msgs sent)
-
-    if args.graph:
-        graph_msgs_per_person(sorted_msgs_by_sender, args.graph_bars, args.graph_title, args.graph_color, args.graph_file)
-    
-    if args.words:
-        top_words(common_words, sorted_msgs_by_sender, args.words_count, args.start_date)
-    
-    print("RESULTS:\n")
-    print("Unique senders: " + str(len(unique_senders)))
-    print("Number of messages: " + str(num_msgs) + "\n")
-    print("MESSAGES PER SENDER:\n")
-
-    for item in sorted_msgs_by_sender:
-        print(item[0] + ": " + str(item[1]))
-
 def graph_msgs_per_person(msgs_per_sender, num_bars, title, color, output):
     # unpack the list of pairs into two tuples
     senders, num_msgs = zip(*msgs_per_sender[0:(num_bars-1)])
@@ -169,6 +64,133 @@ def top_words(words_by_sender, rankings, sender_count, start_date):
         plt.imshow(wordcloud)
         plt.savefig("".join(x.split()) + "_Most Common_Words_Since_"+"-".join(start_date.split("/"))+".png", bbox_inches='tight')
         plt.close()
+
+def main():
+    parser = ArgumentParser()
+    parser.add_argument('--chat', required=True, type=str, help='File path to exported WhatsApp chat as .txt file.')
+    # TODO: make the timestamp format less strict
+    parser.add_argument("--start_date", required=True, type=str, help="Start date to being parsing stats (format: m/dd/yy).")
+    # enable generating a graph
+    parser.add_argument("-g", "--graph", action="store_true", help="Enabled outputting a graph.")
+    parser.add_argument("--graph_bars", type=int, default=10)
+    parser.add_argument("--graph_color", type=str, default="tab:blue")
+    parser.add_argument("--graph_title", type=str, default="")
+    parser.add_argument("--contacts", type=str, default="")
+    parser.add_argument("--graph_file", type=str, default="graph.jpg", help="File to output the graph to.")
+    # enable most common words per sender
+    parser.add_argument("-w", "--words", action="store_true", help="Enable most common words by sender functionality.")
+    parser.add_argument("--words_count", type=int, default=5, help="The number of top senders for which you want the most common words.")
+    args = parser.parse_args()
+    
+    # iterate through lines of the file until we find the target start date
+    # once we've found the start date, then we begin counting statistics
+    found_start = False
+
+    # we can keep track of the sender of the current message we're looking at
+    sender = ""
+
+    # variables to track statistics
+    msgs_per_sender = {}
+    common_words_per_sender = {}
+    num_msgs = 0
+
+    if args.contacts:
+        contacts = json.load(open(args.contacts))
+
+    chat_file = open(Path(args.chat))
+    for line in chat_file:
+        # lines that begin a new message should begin with a timestamp in this format
+        # we only need the date portion to match the target date
+        timestamp = re.search("^[\[]*([\d]*)[\/]([\d]*)[\/]([\d]*)", line)
+
+        new_msg = True
+        if not timestamp:
+            new_msg = False
+
+            # if this isn't a new message and we don't know who the last sender was,
+            # we can't really say anything about the message
+            if not sender:
+                continue
+
+            # we also want to skip anything before the target date, so if this line
+            # doesn't have a timestamp and we haven't found the target, let's skip it
+            if not found_start:
+                continue
+    
+        # check if the line has our target date if we haven't found it yet
+        if not found_start:
+            timestamp_str = timestamp.group(0)
+
+            # remove the opening bracket if it was caught by the regex
+            timestamp_str = timestamp_str[1:] if timestamp_str[0] == "[" else timestamp_str
+            if timestamp_str == args.start_date:
+                found_start = True;
+        
+            # if we didn't find the target date at this point, continue to next message
+            if not found_start:
+                continue
+        
+        # at this point, we'll begin parsing the messages for stats
+        # if we have a new message (i.e. we found the timestamp), we can extract the sender
+        if new_msg:
+            # to get the sender, remove the date from the beginning of the line
+            # then, match any character up to the colon
+            parseline = re.sub("^[\[]*([\d]*)[\/]([\d]*)[\/]([\d]*), [\d]*:[\d]*(:[\d]*){0,1} (AM|PM)[\]]*( [-])* ", "", line)
+            sender_s = re.search("^([^:])+:", parseline)
+            contents = re.sub("^([^:])+:", "", parseline)
+
+            # messages such as people joining the chat don't have senders with this format
+            # we don't want to count those messages anyway, so we can just skip to the next line
+            if not sender_s:
+                continue
+
+            sender = sender_s.group(0)[:-1]
+
+            # replace sender with contacts json file
+            if args.contacts and sender in contacts.keys():
+                sender = contacts[sender]
+
+            # these statistics are only for new messages
+            if sender not in msgs_per_sender.keys():
+                msgs_per_sender[sender] = 1
+            else:
+                msgs_per_sender[sender] += 1
+        
+            num_msgs += 1
+        else:
+            # if this wasn't a new message, the contents are just whatever's in the line
+            contents = line
+
+        # if the user wants a word cloud, then we'll look into the message contents
+        if args.words:
+            if contents == " <Media omitted>\n":
+                contents = ''
+            elif contents == " You deleted this message\n":
+                contents = ''
+            
+            if sender not in common_words_per_sender.keys():
+                common_words_per_sender[sender] = (contents.strip() + " ")
+            else:
+                common_words_per_sender[sender] += (contents.strip() + " ")
+    
+    # sort messages per sender
+    # sorted_msgs_by_sender is a list of pairs
+    # each pair is the ("name of the contact or the phone number", number of msgs sent)
+    sorted_msgs_by_sender = sorted(msgs_per_sender.items(), key=lambda x:x[1], reverse=True)
+
+    if args.graph:
+        graph_msgs_per_person(sorted_msgs_by_sender, args.graph_bars, args.graph_title, args.graph_color, args.graph_file)
+    
+    if args.words:
+        top_words(common_words_per_sender, sorted_msgs_by_sender, args.words_count, args.start_date)
+    
+    print("RESULTS:\n")
+    print("Unique senders: " + str(len(msgs_per_sender.keys())))
+    print("Number of messages: " + str(num_msgs) + "\n")
+    print("MESSAGES PER SENDER:\n")
+
+    for item in sorted_msgs_by_sender:
+        print(item[0] + ": " + str(item[1]))
 
 if __name__ == '__main__':
     main()
