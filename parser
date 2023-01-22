@@ -9,7 +9,7 @@ import os
 
 def graph_msgs_per_person(msgs_per_sender, num_bars, title, color, output):
     # unpack the list of pairs into two tuples
-    senders, num_msgs = zip(*msgs_per_sender[0:(num_bars-1)])
+    senders, num_msgs = zip(*msgs_per_sender[0:(num_bars)])
     
     # graph the sender names with the height of the bar being the number of msgs they have sent 
     plt.figure(figsize = (8, 5), facecolor='lightgray')
